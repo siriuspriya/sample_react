@@ -34,5 +34,5 @@ jobs:
 
     - name: Deploy to EC2
       run: |
-        rsync -avz --delete client/build/ ubuntu@${{ secrets.SERVER_IP }}:/var/www/react-app || exit 1
+        rsync -avz --delete client/build/ ubuntu@${{ secrets.SERVER_IP }}:/var/www/html/react-app || exit 1
         ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.SERVER_IP }} "sudo systemctl restart apache2 || exit 1"
