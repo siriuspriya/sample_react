@@ -35,4 +35,4 @@ jobs:
     - name: Deploy to EC2
       run: |
         rsync -avz --delete client/build/ ec2-user@${{ secrets.SERVER_IP }}:/var/www/react-app || exit 1
-        ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.SERVER_IP }} "sudo systemctl restart nginx || exit 1"
+        ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.SERVER_IP }} "sudo systemctl restart apache2 || exit 1"
