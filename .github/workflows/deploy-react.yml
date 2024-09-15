@@ -1,0 +1,38 @@
+name: Deploy React App to EC2
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '14'
+
+    - name: Install dependencies
+      run: npm install --prefix client
+
+    - name: Build React app
+      run: npm run build --prefix client
+
+    - name: Set up SSH
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
+
+    - name: Deploy to EC2
+      run: |
+        rsync -avz --delete client/build/ ec2-user@${{ secrets.SERVER_IP }}:/var/www/react-app || exit 1
+        ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.SERVER_IP }} "sudo systemctl restart nginx || exit 1"
