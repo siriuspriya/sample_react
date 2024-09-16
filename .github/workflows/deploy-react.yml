@@ -39,7 +39,7 @@ jobs:
         CI=false npm run build
         # Verify build directory creation
         echo "Build directory contents:"
-        ls -la build
+        #ls -la build
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
