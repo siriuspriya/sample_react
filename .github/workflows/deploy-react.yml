@@ -1,13 +1,25 @@
-name: Deploy React App to EC2
+name: Deploy Greenbug Application
 
 on:
   push:
     branches:
       - main
+      - PR
   workflow_dispatch:
+    inputs:
+      target:
+        description: 'Deployment target'
+        required: true
+        default: 'dhanayantri'
+        type: choice
+        options:
+          - dhanayantri
+          - campusplus360
+          - greenbugdemo
+          - asccendbta
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -20,19 +32,60 @@ jobs:
         node-version: '20'
 
     - name: Install dependencies
-      run: npm install --prefix client
+      run: npm install
 
-    - name: Build React app
-      run: npm run build --prefix client
-
-    - name: Set up SSH
+    - name: Build project
       run: |
-        mkdir -p ~/.ssh
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
+        CI=false npm run build
+        # Verify build directory creation
+        echo "Build directory contents:"
+        ls -la build
 
-    - name: Deploy to EC2
-      run: |
-        rsync -avz --delete client/build/ ubuntu@${{ secrets.SERVER_IP }}:/var/www/html/react-app || exit 1
-        ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.SERVER_IP }} "sudo systemctl restart apache2 || exit 1"
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: react-app
+        path: build/
+  deploy:
+   runs-on: ubuntu-latest
+   needs: build
+ 
+   steps:
+   - name: Set up SSH key
+     run: |
+      mkdir -p ~/.ssh
+      echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+      chmod 600 ~/.ssh/id_rsa
+      ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
+
+   - name: Download build artifacts
+     uses: actions/download-artifact@v4
+     with:
+      name: react-app
+
+   - name: Log current directory for build files
+     run: ls -la build
+
+   - name: Check target directory permissions
+     run: ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.SERVER_IP }} "ls -la $TARGET_DIRECTORY"
+
+   - name: Fix target directory permissions (if necessary)
+     run: ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.SERVER_IP }} "sudo chown -R ec2-user:ec2-user $TARGET_DIRECTORY"
+
+   - name: Ensure target directory exists
+     run: ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.SERVER_IP }} "mkdir -p $TARGET_DIRECTORY"
+
+   - name: Deploy application
+     run: |
+      echo "Deploying to $TARGET_DIRECTORY"
+      rsync -avzP --delete ./build/* ubuntu@${{ secrets.SERVER_IP }}:$TARGET_DIRECTORY || exit 1
+
+   - name: Verify file deployment
+     run: ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.SERVER_IP }} "ls -la $TARGET_DIRECTORY"
+    # This step will log the contents of the target directory to confirm the files were successfully copied
+
+   - name: Restart Apache HTTPD
+     run: |
+      echo "Restarting HTTPD service on $SERVER_IP"
+      ssh -o StrictHostKeyChecking=no ubuntuR@${{ secrets.SERVER_IP }} "sudo systemctl restart apache2 || exit 1"
+
