@@ -25,6 +25,15 @@ jobs:
     - name: Build React app
       run: npm run build --prefix client
 
+    - name: Check if build directory exists
+      run: |
+        if [ -d build ]; then
+          echo "Build directory exists."
+          ls -la build
+        else
+          echo "Build directory does not exist!" && exit 1
+        fi
+
     - name: Set up SSH
       run: |
         mkdir -p ~/.ssh
