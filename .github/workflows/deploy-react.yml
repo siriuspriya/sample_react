@@ -30,7 +30,7 @@ jobs:
 
     - name: Check if build directory exists
       run: |
-        if [ -d client/build ]; then
+        if [ -d $GITHUB_WORKSPACE/client/build/ ]; then
           echo "Build directory exists."
           ls -la build
         else
