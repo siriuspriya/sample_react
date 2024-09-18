@@ -25,17 +25,15 @@ jobs:
     - name: Build React app
       run: npm run build --prefix client
 
-    - name: Show current directory
-      run: ls -la $GITHUB_WORKSPACE/client/build/
+    - name: Set build path
+      run: echo "BUILD_PATH=$(pwd)/build" >> $GITHUB_ENV
+        ls -la $(pwd)/build
 
-    - name: Check if build directory exists
-      run: |
-        if [ -d $GITHUB_WORKSPACE/client/build/ ]; then
-          echo "Build directory exists."
-          ls -la build
-        else
-          echo "Build directory does not exist!" && exit 1
-        fi
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-artifacts
+        path: ${{ env.BUILD_PATH }}
 
     - name: Set up SSH
       run: |
