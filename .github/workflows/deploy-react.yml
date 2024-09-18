@@ -25,6 +25,9 @@ jobs:
     - name: Build React app
       run: npm run build --prefix client
 
+    - name: Show current directory
+      run: ls -la $GITHUB_WORKSPACE/client/build/
+
     - name: Check if build directory exists
       run: |
         if [ -d build ]; then
